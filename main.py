@@ -102,3 +102,15 @@ async def api_driver_deliveries(driver_id: int):
         return encrypt_response(deliveries)
     except Exception as e:
         return encrypt_response({"error": str(e)})
+
+
+@app.post("/driver_id_by_phone/{phone_number}")
+async def api_driver_id_by_phone(phone_number: str):
+    try:
+        driver_id = manager.get_driver_id_by_phone(phone_number)
+        if driver_id is None:
+            return encrypt_response({"error": "Водитель с таким номером не найден"})
+
+        return encrypt_response({"driver_id": driver_id})
+    except Exception as e:
+        return encrypt_response({"error": str(e)})

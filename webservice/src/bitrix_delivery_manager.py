@@ -490,3 +490,20 @@ class BitrixDeliveryManager:
                 }
         except Exception as e:
             print(f"Ошибка при загрузке кэша: {e}")
+    
+    def get_driver_id_by_phone(self, phone_number: str) -> int | None:
+        """
+        Поиск driver_id (Bitrix Contact ID) по номеру телефона.
+        Номер приводится к виду, с которым сравниваются контакты.
+        """
+        def normalize(p: str) -> str:
+            # удалим всё кроме цифр, например: +7 (999) 123-45-67 → 79991234567
+            return ''.join(filter(str.isdigit, p))
+
+        target = normalize(phone_number)
+
+        for driver_id, driver in self.cache['contact'].items():
+            if normalize(driver.get("PHONE", "")) == target:
+                return driver_id
+
+        return None
