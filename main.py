@@ -2,7 +2,6 @@ from datetime import datetime, timezone, date
 from fastapi import FastAPI
 from src.bitrix_delivery_manager import BitrixDeliveryManager
 from src.driver_index_builder import DriverIndexBuilder
-from cryptography.fernet import Fernet
 import json
 import os
 
