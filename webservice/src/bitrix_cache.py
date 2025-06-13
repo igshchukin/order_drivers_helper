@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime, timedelta
 
-from src.bitrix_delivery_manager import BitrixDeliveryManager  # импортируй свой основной класс
+from bitrix_delivery_manager import BitrixDeliveryManager  # импортируй свой основной класс
 
 
 def get_manager(force_reload) -> BitrixDeliveryManager:

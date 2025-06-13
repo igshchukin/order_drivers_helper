@@ -1,6 +1,6 @@
 import os
 from typing import Any, Dict
-from src.bitrix_delivery_manager import BitrixDeliveryManager
+from webservice.src.bitrix_delivery_manager import BitrixDeliveryManager
 
 
 class DriverIndexBuilder:
