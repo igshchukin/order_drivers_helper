@@ -14,6 +14,7 @@ class BitrixDeliveryManager:
     def __init__(self, webhook_url: str, cache_file: str, force_reload: bool = True):
         self.webhook_url = webhook_url.rstrip("/")
         self.cache_file = cache_file
+        self.was_sent = []
         self.cache: Dict[str, Dict[int, Dict[str, Any]]] = {
             'delivery': {},
             'shipment': {},
@@ -464,6 +465,7 @@ class BitrixDeliveryManager:
 
     def refresh_updates(self, since: datetime):
         iso_time = since.isoformat()
+        self._load_driver_contacts_from_deliveries(limit=50)
         self.update_deliveries()
         print(f"Обновление всех сущностей с {iso_time}...")
         for name in self.entity_type_ids.keys():
@@ -484,31 +486,48 @@ class BitrixDeliveryManager:
         updated_items = self._paginate_list("crm.item.list.json", {
             "entityTypeId": self.entity_type_ids['delivery']
         })
+        NAZNACHENIE_DRIVER_STAGE = 'DT1048_9:1'
+        SEND_DOCUMENTS_STAGE = 'DT1048_9:4'
         if len(updated_items) > 0:
             for item in updated_items:
+                mode = None
                 delivery_id = int(item['id'])
                 old_delivery = self.cache['delivery'].get(delivery_id)
 
                 driver_id = item.get('ufCrm6_1729602194')
-                if not driver_id or 'DT1048_9:1' != item['stageId']:
+                if not driver_id or item['stageId'] not in [SEND_DOCUMENTS_STAGE, NAZNACHENIE_DRIVER_STAGE]:
                     continue
+
+                if item['stageId'] == NAZNACHENIE_DRIVER_STAGE:
+                    mode = 'new_delivery_for_driver'
+                if item['stageId'] == SEND_DOCUMENTS_STAGE:
+                    mode = 'send_documents'
 
                 grouped = self.get_deliveries_grouped_by_driver(int(driver_id))
                 already_has = any(
                     d['delivery']['id'] == delivery_id for d in grouped.get('deliveries', [])
                 )
+                already_was_the_status = any(
+                    d['delivery']['stageId'] == SEND_DOCUMENTS_STAGE for d in grouped.get('deliveries', [])
+                )
 
-                if not already_has:
+                if not already_has or not already_was_the_status:
                     try:
                         print(item)
                         response = requests.post(
-                            'https://n8n.glavsnabstroymsk.ru/webhook/send_information_about_new_deliveries',
-                            json={"delivery_id": delivery_id, "driver_id": driver_id}
+                            'https://n8n.glavsnabstroymsk.ru/webhook-test/send_information_about_new_deliveries',
+                            json={"delivery_id": delivery_id, "driver_id": driver_id, 'mode': mode}
                         )
                         logging.info(f"Доставка {delivery_id} {self.entity_type_ids['delivery']} {driver_id} отправлена в n8n {response.text}")
                     except Exception as e:
-                        logging.error(f"Ошибка при POST в n8n: {e}")
-    
+                        try:
+                            response = requests.post(
+                                'https://n8n.glavsnabstroymsk.ru/webhook/send_information_about_new_deliveries',
+                                json={"delivery_id": delivery_id, "driver_id": driver_id, 'mode': mode}
+                            )
+                        except Exception as e:
+                            logging.error(f"Ошибка при POST в n8n: {e}")
+
     def _save_cache_to_file(self):
         try:
             with open(self.cache_file, "w", encoding="utf-8") as f:

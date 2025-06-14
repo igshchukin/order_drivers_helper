@@ -5,4 +5,4 @@ export BITRIX_CACHE_FILE="webservice/src/bitrix_cache.json"
 #source tmp_venv/bin/activate
 #pip install --upgrade pip
 #pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn main:app --port 9030 --reload

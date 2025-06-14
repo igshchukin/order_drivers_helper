@@ -32,6 +32,7 @@ app = FastAPI()
 @app.post("/load")
 async def api_load():
     global manager, driver_index, last_update_time
+    manager.refresh_updates(last_update_time)
     manager = BitrixDeliveryManager(
         os.environ.get("BITRIX_WEBHOOK_URL"),
         os.environ.get("BITRIX_CACHE_FILE", "webservice/src/bitrix_cache.json"),
