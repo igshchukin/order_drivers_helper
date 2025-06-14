@@ -1,5 +1,5 @@
 export BITRIX_WEBHOOK_URL="https://crm.glavsnabstroymsk.ru/rest/1/mwbgz3l2arc53wa5/"
-export BITRIX_CACHE_FILE="data/cache_file.json"
+export BITRIX_CACHE_FILE="webservice/src/bitrix_cache.json"
 
 #python -m venv tmp_venv
 #source tmp_venv/bin/activate

@@ -272,12 +272,17 @@ class BitrixDeliveryManager:
         for chunk in self._chunked(list(driver_contact_ids), 50):
             params = {
                 "filter": {"ID": chunk},
-                #"select": ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE", "EMAIL"]
+                "select": ["*", "PHONE", "EMAIL"]
             }
             try:
                 contacts = self._paginate_list("crm.contact.list.json", params, limit=limit)
                 for c in contacts:
-                    self.cache['contact'][int(c['ID'])] = c
+                    cur_cont = c.copy()
+                    if "PHONE" in cur_cont:
+                        cur_cont['PHONE'] = cur_cont['PHONE'][0]['VALUE'].replace('+', '')
+                    else:
+                        cur_cont['PHONE'] = ""
+                    self.cache['contact'][int(c['ID'])] = cur_cont
                 print(f"Загружено контактов водителей: {len(contacts)}")
             except Exception as e:
                 print(f"Ошибка при загрузке контактов водителей: {e}")
@@ -390,7 +395,7 @@ class BitrixDeliveryManager:
 
         grouped = dict(grouped)
         if search_driver_id is not None:
-            return grouped[search_driver_id]
+            return grouped.get(search_driver_id, {})
         else:
             return grouped
     
@@ -459,8 +464,10 @@ class BitrixDeliveryManager:
 
     def refresh_updates(self, since: datetime):
         iso_time = since.isoformat()
+        self.update_deliveries()
         print(f"Обновление всех сущностей с {iso_time}...")
-        for name, entity_type_id in self.entity_type_ids.items():
+        for name in self.entity_type_ids.keys():
+            entity_type_id = self.entity_type_ids[name]
             try:
                 print(f"Обновляем {name}...")
                 updated_items = self._paginate_list("crm.item.list.json", {
@@ -472,6 +479,35 @@ class BitrixDeliveryManager:
             except Exception as e:
                 print(f"Ошибка при обновлении {name}: {e}")
         self._save_cache_to_file()
+    
+    def update_deliveries(self):
+        updated_items = self._paginate_list("crm.item.list.json", {
+            "entityTypeId": self.entity_type_ids['delivery']
+        })
+        if len(updated_items) > 0:
+            for item in updated_items:
+                delivery_id = int(item['id'])
+                old_delivery = self.cache['delivery'].get(delivery_id)
+
+                driver_id = item.get('ufCrm6_1729602194')
+                if not driver_id or 'DT1048_9:1' != item['stageId']:
+                    continue
+
+                grouped = self.get_deliveries_grouped_by_driver(int(driver_id))
+                already_has = any(
+                    d['delivery']['id'] == delivery_id for d in grouped.get('deliveries', [])
+                )
+
+                if not already_has:
+                    try:
+                        print(item)
+                        response = requests.post(
+                            'https://n8n.glavsnabstroymsk.ru/webhook/send_information_about_new_deliveries',
+                            json={"delivery_id": delivery_id, "driver_id": driver_id}
+                        )
+                        logging.info(f"Доставка {delivery_id} {self.entity_type_ids['delivery']} {driver_id} отправлена в n8n {response.text}")
+                    except Exception as e:
+                        logging.error(f"Ошибка при POST в n8n: {e}")
     
     def _save_cache_to_file(self):
         try:
