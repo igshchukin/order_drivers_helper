@@ -562,3 +562,43 @@ class BitrixDeliveryManager:
                 return driver_id
 
         return None
+    
+    def move_entity_to_stage(self, entity_name: str, entity_id: int, new_stage_id: str) -> bool:
+        """
+        Перемещает объект (delivery, shipment и т.п.) в новый stageId по его entity названию.
+        
+        :param entity_name: Название сущности (например, 'delivery', 'shipment')
+        :param entity_id: ID элемента
+        :param new_stage_id: Новый stageId (например, 'DT1048_9:SUCCESS')
+        :return: True если успешно, иначе False
+        """
+        if entity_name not in self.entity_type_ids:
+            logging.error(f"Неизвестная сущность: {entity_name}")
+            return False
+
+        entity_type_id = self.entity_type_ids[entity_name]
+        url = f"{self.webhook_url}/crm.item.update.json"
+
+        payload = {
+            "entityTypeId": entity_type_id,
+            "id": entity_id,
+            "fields": {
+                "stageId": new_stage_id
+            }
+        }
+
+        try:
+            response = requests.post(url, json=payload)
+            result = response.json()
+            if 'result' in result:
+                logging.info(f"{entity_name} #{entity_id} перемещён в stage {new_stage_id}")
+                # Обновим локальный кэш
+                if entity_name in self.cache and entity_id in self.cache[entity_name]:
+                    self.cache[entity_name][entity_id]['stageId'] = new_stage_id
+                return True
+            else:
+                logging.warning(f"Ошибка при обновлении stageId: {result}")
+                return False
+        except Exception as e:
+            logging.error(f"Ошибка при перемещении объекта: {e}")
+            return False

@@ -1,11 +1,12 @@
 from datetime import datetime, timezone, date
 from fastapi import FastAPI
-from webservice.src.bitrix_delivery_manager import BitrixDeliveryManager
-from webservice.src.driver_index_builder import DriverIndexBuilder
 import json
 import os
+from pydantic import BaseModel
 
 from webservice.src.driver_index_builder import get_drivers_deliveries
+from webservice.src.bitrix_delivery_manager import BitrixDeliveryManager
+from webservice.src.driver_index_builder import DriverIndexBuilder
 
 
 def encrypt_response(data: dict) -> dict:
@@ -113,5 +114,26 @@ async def api_driver_id_by_phone(phone_number: str):
             return encrypt_response({"error": "Водитель с таким номером не найден"})
 
         return encrypt_response({"driver_id": driver_id})
+    except Exception as e:
+        return encrypt_response({"error": str(e)})
+
+
+class MoveStageRequest(BaseModel):
+    entity_name: str
+    entity_id: int
+    new_stage_id: str
+
+@app.post("/move_stage")
+async def api_move_stage(data: MoveStageRequest):
+    try:
+        success = manager.move_entity_to_stage(
+            entity_name=data.entity_name,
+            entity_id=data.entity_id,
+            new_stage_id=data.new_stage_id
+        )
+        if success:
+            return encrypt_response({"status": "success"})
+        else:
+            return encrypt_response({"error": "Ошибка при перемещении в новую стадию"})
     except Exception as e:
         return encrypt_response({"error": str(e)})
