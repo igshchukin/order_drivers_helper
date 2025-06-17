@@ -515,18 +515,19 @@ class BitrixDeliveryManager:
                     try:
                         print(item)
                         response = requests.post(
-                            'https://n8n.glavsnabstroymsk.ru/webhook-test/send_information_about_new_deliveries',
+                            'https://n8n.glavsnabstroymsk.ru/webhook/send_information_about_new_deliveries',
                             json={
                                 "delivery_id": delivery_id, 
                                 "driver_id": driver_id, 
                                 'mode': mode
-                            }
+                            },
+                            timeout=10
                         )
                         logging.info(f"Доставка {delivery_id} {self.entity_type_ids['delivery']} {driver_id} отправлена в n8n {response.text}")
                     except Exception as e:
                         try:
                             response = requests.post(
-                                'https://n8n.glavsnabstroymsk.ru/webhook/send_information_about_new_deliveries',
+                                'https://n8n.glavsnabstroymsk.ru/webhook-test/send_information_about_new_deliveries',
                                 json={
                                     "delivery_id": delivery_id, 
                                     "driver_id": driver_id, 
