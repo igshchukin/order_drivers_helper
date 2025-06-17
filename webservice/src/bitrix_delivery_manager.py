@@ -537,8 +537,9 @@ class BitrixDeliveryManager:
                             logging.info(f"Доставка в пром режиме {delivery_id} {self.entity_type_ids['delivery']} {driver_id} отправлена в n8n {response.text}")
                         except Exception as e:
                             logging.error(f"Ошибка при POST в n8n: {e}")
-                    
+                
                 self.cache['delivery'][delivery_id] = item
+            self._get_products_for_deliveries(list(self.cache['delivery'].keys()))
 
     def _save_cache_to_file(self):
         try:
