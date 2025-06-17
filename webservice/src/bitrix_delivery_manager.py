@@ -525,6 +525,7 @@ class BitrixDeliveryManager:
                                 'https://n8n.glavsnabstroymsk.ru/webhook/send_information_about_new_deliveries',
                                 json={"delivery_id": delivery_id, "driver_id": driver_id, 'mode': mode}
                             )
+                            logging.info(f"Доставка в пром режиме {delivery_id} {self.entity_type_ids['delivery']} {driver_id} отправлена в n8n {response.text}")
                         except Exception as e:
                             logging.error(f"Ошибка при POST в n8n: {e}")
 
@@ -556,8 +557,11 @@ class BitrixDeliveryManager:
             return ''.join(filter(str.isdigit, p))
 
         target = normalize(phone_number)
+        print(self.cache['contact'][10374].get("PHONE", "empty"))
 
         for driver_id, driver in self.cache['contact'].items():
+            if driver.get("PHONE", "") != "":
+                 print(driver['ID'], driver.get("PHONE"))
             if normalize(driver.get("PHONE", "")) == target:
                 return driver_id
 
