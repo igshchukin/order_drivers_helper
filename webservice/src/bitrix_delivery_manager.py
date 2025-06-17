@@ -557,7 +557,6 @@ class BitrixDeliveryManager:
             return ''.join(filter(str.isdigit, p))
 
         target = normalize(phone_number)
-        print(self.cache['contact'][10374].get("PHONE", "empty"))
 
         for driver_id, driver in self.cache['contact'].items():
             if driver.get("PHONE", "") != "":
