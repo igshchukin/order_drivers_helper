@@ -77,6 +77,11 @@ async def api_drivers_deliveries():
     )
 
 
+@app.get("/last_update_time")
+async def get_time():
+    return encrypt_response({"last_update_time": last_update_time.isoformat()})
+
+
 @app.get("/delivery_info/{delivery_id}")
 async def api_delivery_info(delivery_id: int):
     try:

@@ -493,7 +493,6 @@ class BitrixDeliveryManager:
             for item in updated_items:
                 mode = None
                 delivery_id = int(item['id'])
-                old_delivery = self.cache['delivery'].get(delivery_id)
 
                 driver_id = item.get('ufCrm6_1729602194')
                 if not driver_id or item['stageId'] not in [SEND_DOCUMENTS_STAGE, NAZNACHENIE_DRIVER_STAGE]:
@@ -517,18 +516,28 @@ class BitrixDeliveryManager:
                         print(item)
                         response = requests.post(
                             'https://n8n.glavsnabstroymsk.ru/webhook-test/send_information_about_new_deliveries',
-                            json={"delivery_id": delivery_id, "driver_id": driver_id, 'mode': mode}
+                            json={
+                                "delivery_id": delivery_id, 
+                                "driver_id": driver_id, 
+                                'mode': mode
+                            }
                         )
                         logging.info(f"Доставка {delivery_id} {self.entity_type_ids['delivery']} {driver_id} отправлена в n8n {response.text}")
                     except Exception as e:
                         try:
                             response = requests.post(
                                 'https://n8n.glavsnabstroymsk.ru/webhook/send_information_about_new_deliveries',
-                                json={"delivery_id": delivery_id, "driver_id": driver_id, 'mode': mode}
+                                json={
+                                    "delivery_id": delivery_id, 
+                                    "driver_id": driver_id, 
+                                    'mode': mode
+                                }
                             )
                             logging.info(f"Доставка в пром режиме {delivery_id} {self.entity_type_ids['delivery']} {driver_id} отправлена в n8n {response.text}")
                         except Exception as e:
                             logging.error(f"Ошибка при POST в n8n: {e}")
+                    
+                self.cache['delivery'][delivery_id] = item
 
     def _save_cache_to_file(self):
         try:
