@@ -254,14 +254,15 @@ class BitrixDeliveryManager:
 
     def _load_driver_contacts_from_deliveries(self, limit: int = 50):
         # Сбор всех уникальных ID контактов водителей из поля ufCrm6_1729602194 в deliveries
-        driver_contact_ids = set()
-        for delivery in self.cache['delivery'].values():
-            driver_id = delivery.get('ufCrm6_1729602194')
-            if driver_id:
-                try:
-                    driver_contact_ids.add(int(driver_id))
-                except ValueError:
-                    print(f"Некорректный ID водителя: {driver_id}")
+        deliveries_list = self._paginate_list('crm.item.list', {
+            'entityTypeId': self.entity_type_ids['delivery'],
+            'SELECT': ['ufCrm6_1729602194']})
+        driver_contact_ids = list(
+            set(
+                [item['ufCrm6_1729602194'] for item in deliveries_list 
+                if item['ufCrm6_1729602194'] is not None]
+            )
+        )
 
         if not driver_contact_ids:
             print("Контакты водителей не найдены в deliveries.")
@@ -270,7 +271,7 @@ class BitrixDeliveryManager:
         print(f"Загружаем данные контактов водителей: {len(driver_contact_ids)} шт.")
 
         # Запрашиваем контакты пачками по 50 (лимит API)
-        for chunk in self._chunked(list(driver_contact_ids), 50):
+        for chunk in self._chunked(driver_contact_ids, 50):
             params = {
                 "filter": {"ID": chunk},
                 "select": ["*", "PHONE", "EMAIL"]
