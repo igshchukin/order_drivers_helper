@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI
 import json
 import os
@@ -41,7 +41,7 @@ async def api_load():
     )
     driver_index = DriverIndexBuilder(manager)
     last_update_time = datetime.now(timezone.utc)
-    
+    last_update_time = last_update_time.astimezone(timezone(timedelta(hours=3)))
 
     return encrypt_response({"status": "loaded"})
 
@@ -53,7 +53,9 @@ async def api_refresh():
         return encrypt_response({"error": "BitrixDeliveryManager is not loaded"})
     manager.refresh_updates(last_update_time)
     driver_index = DriverIndexBuilder(manager)
+
     last_update_time = datetime.now(timezone.utc)
+    last_update_time = last_update_time.astimezone(timezone(timedelta(hours=3)))
 
     return encrypt_response({"status": "refreshed"})
 
