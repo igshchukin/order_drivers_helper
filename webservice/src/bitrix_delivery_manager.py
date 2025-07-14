@@ -242,6 +242,9 @@ class BitrixDeliveryManager:
                 **delivery,
                 'product_rows': [
                     {
+                        'otgruzka_id': delivery['parentId1040'],
+                        'delivery_id': delivery['id'],
+                        'product_id': item['productId'],
                         'product_name': item['productName'],
                         'quantity': item['quantity'],
                         'unit': item['measureName']
