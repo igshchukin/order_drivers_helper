@@ -237,6 +237,7 @@ class BitrixDeliveryManager:
             key = item['ownerId']
             grouped[key].append(item)
         grouped = dict(grouped)
+        print(grouped)
         self.cache['delivery'] = {
             del_id: {
                 **delivery,
@@ -244,7 +245,7 @@ class BitrixDeliveryManager:
                     {
                         'otgruzka_id': delivery['parentId1040'],
                         'delivery_id': delivery['id'],
-                        'product_id': item['productId'],
+                        'product_id': item['id'],
                         'product_name': item['productName'],
                         'quantity': item['quantity'],
                         'unit': item['measureName']
