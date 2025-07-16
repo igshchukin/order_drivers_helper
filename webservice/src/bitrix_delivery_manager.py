@@ -204,8 +204,8 @@ class BitrixDeliveryManager:
         self._fetch_specific_entities('doverennost', list(self.cache['delivery'].keys()), "parentId1048", limit=limit)
         self.download_urls('doverennost')
 
-        self._get_products_for_entity(list(self.cache['delivery'].keys()))
         self._get_products_for_entity(list(self.cache['shipment'].keys()), entity_type_name='shipment')
+        self._get_products_for_entity(list(self.cache['delivery'].keys()))
 
     def _load_deals_from_supplies(self, limit: int = 50):
         deal_ids = [
@@ -242,20 +242,21 @@ class BitrixDeliveryManager:
         self.cache[entity_type_name] = {
             ent_id: {
                 **entity_obj,
-                'product_rows': [
-                    {
-                        'otgruzka_id': entity_obj.get('parentId1040', 0),
-                        'entity_id': entity_obj['id'],
-                        'product_id': item['id'],
-                        'product_name': item['productName'],
-                        'quantity': item['quantity'],
-                        'unit': item['measureName']
-                    }
-                    for item in grouped[entity_obj['id']]
-                ]
+                'product_rows': self.cache['shipment'].get(entity_obj.get('parentId1040', ''), {}).get('product_rows', []) or \
+                    [{
+                            'otgruzka_id': entity_obj.get('parentId1040', -1),
+                            'entity_id': entity_obj['id'],
+                            'product_id': item['id'],
+                            'product_name': item['productName'],
+                            'quantity': item['quantity'],
+                            'unit': item['measureName']
+                        }
+                        for item in grouped[entity_obj['id']]
+                    ]
             }
             for ent_id, entity_obj in self.cache[entity_type_name].items()
         }
+
 
     def _load_driver_contacts_from_deliveries(self, limit: int = 50):
         # Сбор всех уникальных ID контактов водителей из поля ufCrm6_1729602194 в deliveries
@@ -360,7 +361,7 @@ class BitrixDeliveryManager:
                         'contact': self.cache['contact'].get(
                             int(delivery.get('ufCrm6_1729602194') or 0), None),
                         'delivery_product_rows': delivery.get('product_rows', []),
-                        'shipment': shipment.get('product_rows', [])
+                        'product_rows': shipment.get('product_rows', [])
                     }
 
                 purchases = [
