@@ -554,7 +554,7 @@ class BitrixDeliveryManager:
                             logging.error(f"Ошибка при POST в n8n: {e}")
                 
                 self.cache['delivery'][delivery_id] = item
-            self._get_products_for_deliveries(list(self.cache['delivery'].keys()))
+            self._get_products_for_entity(list(self.cache['delivery'].keys()))
 
     def _save_cache_to_file(self):
         try:
