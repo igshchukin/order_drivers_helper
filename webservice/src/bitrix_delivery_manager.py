@@ -242,7 +242,15 @@ class BitrixDeliveryManager:
         self.cache[entity_type_name] = {
             ent_id: {
                 **entity_obj,
-                'product_rows': self.cache['shipment'].get(entity_obj.get('parentId1040', ''), {}).get('product_rows', []) or \
+                'product_rows': [
+                    {
+                        **item,
+                        'delivery_product_id': grouped[entity_obj['id']][i]['id']
+                    }
+                    for i, item in enumerate(
+                        self.cache['shipment'].get(entity_obj.get('parentId1040', ''), {}).get('product_rows', [])
+                    )
+                 ] or \
                     [{
                             'otgruzka_id': entity_obj.get('parentId1040', -1),
                             'entity_id': entity_obj['id'],
