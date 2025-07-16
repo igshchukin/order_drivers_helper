@@ -204,7 +204,8 @@ class BitrixDeliveryManager:
         self._fetch_specific_entities('doverennost', list(self.cache['delivery'].keys()), "parentId1048", limit=limit)
         self.download_urls('doverennost')
 
-        self._get_products_for_deliveries(list(self.cache['delivery'].keys()))
+        self._get_products_for_entity(list(self.cache['delivery'].keys()))
+        self._get_products_for_entity(list(self.cache['shipment'].keys()), entity_type_name='shipment')
 
     def _load_deals_from_supplies(self, limit: int = 50):
         deal_ids = [
@@ -222,12 +223,12 @@ class BitrixDeliveryManager:
             item["ID"]: item for item in self._paginate_list("crm.deal.list.json", params, limit=limit)
         }
     
-    def _get_products_for_deliveries(self, ids, limit: int = 50):
+    def _get_products_for_entity(self, ids, limit: int = 50, entity_type_name: str = 'delivery'):
         product_rows = self._paginate_list(
             '/crm.item.productrow.list', 
             {
                 "filter" : {
-                    "=ownerType" : f"T{hex(self.entity_type_ids['delivery'])[2:]}", ## 1048
+                    "=ownerType" : f"T{hex(self.entity_type_ids[entity_type_name])[2:]}", ## 1048
                     "=ownerId" : ids
                 }
             }, limit=limit)
@@ -238,22 +239,22 @@ class BitrixDeliveryManager:
             grouped[key].append(item)
         grouped = dict(grouped)
         print(grouped)
-        self.cache['delivery'] = {
-            del_id: {
-                **delivery,
+        self.cache[entity_type_name] = {
+            ent_id: {
+                **entity_obj,
                 'product_rows': [
                     {
-                        'otgruzka_id': delivery['parentId1040'],
-                        'delivery_id': delivery['id'],
+                        'otgruzka_id': entity_obj.get('parentId1040', 0),
+                        'entity_id': entity_obj['id'],
                         'product_id': item['id'],
                         'product_name': item['productName'],
                         'quantity': item['quantity'],
                         'unit': item['measureName']
                     }
-                    for item in grouped[delivery['id']]
+                    for item in grouped[entity_obj['id']]
                 ]
             }
-            for del_id, delivery in self.cache['delivery'].items()
+            for ent_id, entity_obj in self.cache[entity_type_name].items()
         }
 
     def _load_driver_contacts_from_deliveries(self, limit: int = 50):
@@ -358,7 +359,8 @@ class BitrixDeliveryManager:
                         'marchrutniy_list': self.cache['marchrutniy_list'].get(delivery_id),
                         'contact': self.cache['contact'].get(
                             int(delivery.get('ufCrm6_1729602194') or 0), None),
-                        'product_rows': delivery.get('product_rows', [])
+                        'delivery_product_rows': delivery.get('product_rows', []),
+                        'shipment': shipment.get('product_rows', [])
                     }
 
                 purchases = [
